@@ -1,193 +1,509 @@
-![HenryLogo](https://d31uz8lwfmyn8g.cloudfront.net/Assets/logo-henry-white-lg.png)
+FASE 1 CREACION DE MODELS
 
-# Individual Project - Henry Dogs
+Character model
 
-<img height="200" src="./dog.png" />
+```JS
+const { DataTypes } = require("sequelize");
 
-## Objetivos del Proyecto
-
-- Construir una App utlizando React, Redux, Node y Sequelize.
-- Afirmar y conectar los conceptos aprendidos en la carrera.
-- Aprender mejores prácticas.
-- Aprender y practicar el workflow de GIT.
-- Usar y practicar testing.
-
-## Horarios y Fechas
-
-El proyecto tendrá una duración máxima de tres semanas. En el caso de que completan todas las tareas antes de dicho lapso podrán avisar a su Instructor para coordinar una fecha de presentación del trabajo (DEMO).
-
-## Comenzando
-
- 1. Forkear el repositorio para tener una copia del mismo en sus cuentas
- 2. Clonar el repositorio en sus computadoras para comenzar a trabajar
-
-Tendrán un `boilerplate` con la estructura general tanto del servidor como de cliente.
-
-__IMPORTANTE:__ Es necesario contar minimamente con la última versión estable de Node y NPM. Asegurarse de contar con ella para poder instalar correctamente las dependecias necesarias para correr el proyecto.
-
-Actualmente las versiónes necesarias son:
-
-- __Node__: 12.18.3 o mayor
-- __NPM__: 6.14.16 o mayor
-
-Para verificar que versión tienen instalada:
-
-```bash
-node -v
-npm -v
+module.exports = (sequelize) => {
+  sequelize.define("character", {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
+      primaryKey: true,
+    },
+    firstName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    family: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    imageUrl: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  });
+};
 ```
 
-__ACLARACIÓN:__ Las dependencias actuales se encuentran en las versiones que venimos trabajando durante el bootcamp.
+Family model
 
-Versiones:
+```JS
+const { DataTypes } = require("sequelize");
 
-- __react__: 17.0.1
-- __react-dom__: 17.0.1
-- __react-router-dom__: 5.2.0
-- __redux__: 4.0.5
-- __react-redux__: 7.2.3
-
-Está permitido, __bajo su responsabilidad__, actualizar las dependencias a versiones más actuales.
-
-> __IMPORTANTE:__ Versiones mas actuales podrían presentar configuraciones diferentes respecto a las versiones en las que venimos trabajando durante el bootcamp.
-
-## BoilerPlate
-
-El boilerplate cuenta con dos carpetas: `api` y `client`. En estas carpetas estará el código del back-end y el front-end respectivamente.
-
-En `api` crear un archivo llamado: `.env` que tenga la siguiente forma:
-
-```env
-DB_USER=usuariodepostgres
-DB_PASSWORD=passwordDePostgres
-DB_HOST=localhost
+module.exports = (sequelize) => {
+  sequelize.define("family", {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  });
+};
 ```
 
-Reemplazar `usuariodepostgres` y `passwordDePostgres` con tus propias credenciales para conectarte a postgres. Este archivo va ser ignorado en la subida a github, ya que contiene información sensible (las credenciales).
+CREAMOS EL .ENV CON LOS SIGUIENTES DATOS
 
-Adicionalmente será necesario que creen desde psql una base de datos llamada `dogs`
+```JS
+DB_USER="postgres"
+DB_PASSWORD="m0gur4226"
+DB_HOST="localhost"
+DB_NAME="game_of_thrones"
+```
 
-El contenido de `client` fue creado usando: Create React App.
+IMPORTAMOS LOS MODELS EN EL DB.JS
 
-## Enunciado
+```JS
+const { Character, Family } = sequelize.models;
+```
 
-a idea general es crear una aplicación en la cual se puedan ver distintas razas de perro junto con información relevante de las mismas utilizando la api externa [the dog api](https://thedogapi.com/) y a partir de ella poder, entre otras cosas:
+CREAMOS LAS RELACIONES
 
-- Buscar perros
-- Filtrarlos / Ordenarlos
-- Agregar nuevos perros
+```JS
+Character.belongsToMany(Family, { through: "familyCharacter" });
+Family.belongsToMany(Character, { through: "familyCharacter" });
+```
 
-__IMPORTANTE__: Para poder utilizar esta API externa es necesario crearse una cuenta para obtener una API Key que luego debera ser incluida en todos los request que hagamos a rawg simplemente agregando `?api_key={YOUR_API_KEY}` al final de cada endpoint. Agregar la clave en el archivo `.env` para que la misma no se suba al repositorio por cuestiones de seguridad y utilizarla desde allí.
+ABRIMOS EL PG ADMIN E INICIALIZAMOS LA BASE DE DATOS
 
-__IMPORTANTE__: Para las funcionalidades de filtrado y ordenamiento NO pueden utilizar los endpoints de la API externa que ya devuelven los resultados filtrados u ordenados sino que deben realizarlo ustedes mismos. En particular alguno de los ordenamientos o filtrados debe si o si realizarse desde el frontend.
+Una vez abierto el pgAdmin4 corremos npm start y arrancamos nuestro back
 
-### Únicos Endpoints/Flags que pueden utilizar
+CREAMOS NUESTRO PRIMER CONTROLADOR, EL CHARACTERCONTROLLER
+Y CREAMOS NUESTRA PRIMER FUNCION ADDCHARACTER
 
-- GET <https://api.thedogapi.com/v1/breeds>
-- GET <https://api.thedogapi.com/v1/breeds/search?q={raza_perro}>
+```JS
+const { Character, Temperament } = require("../db");
+const axios = require("axios");
+require("dotenv").config();
+const { API_URL } = process.env;
+const { v4: uuidv4 } = require("uuid");
 
-### Requerimientos mínimos
+async function addCharacter(req, res, next) {
+  try {
+    const id = uuidv4();
+    let { firstName, lastName, title, family, imageUrl } = req.body;
 
-A continuación se detallaran los requerimientos mínimos para la aprobación del proyecto individial. Aquellos que deseen agregar más funcionalidades podrán hacerlo. En cuanto al diseño visual no va a haber wireframes ni prototipos prefijados sino que tendrán libertad de hacerlo a su gusto pero tienen que aplicar los conocimientos de estilos vistos en el curso para que quede agradable a la vista.
+    const characterCreated = await Character.create({
+      id,
+      firstName,
+      lastName,
+      title,
+      family,
+      imageUrl,
+    });
+    return res.status(200).json(characterCreated);
+  } catch (err) {
+    next(err);
+  }
+}
 
-__IMPORTANTE__: No se permitirá utilizar librerías externas para aplicar estilos a la aplicación. Tendrán que utilizar CSS con algunas de las opciones que vimos en dicha clase (CSS puro, CSS Modules o Styled Components)
+module.exports = {
+  addCharacter,
+};
+```
 
-#### Tecnologías necesarias
+CREAMOS LA PRIMER RUTA PARA COMPROBAR QUE ESTE FUNCIONANDO 
 
-- [ ] React
-- [ ] Redux
-- [ ] Express
-- [ ] Sequelize - Postgres
+```JS
+const { Router } = require("express");
+// Importar todos los routers;
+// Ejemplo: const authRouter = require('./auth.js');
+const characterController = require("../controllers/characterController.js");
 
-## Frontend
+const router = Router();
 
-Se debe desarrollar una aplicación de React/Redux que contenga las siguientes pantallas/rutas.
+// Configurar los routers
+// Ejemplo: router.use('/auth', authRouter);
 
-__Pagina inicial__: deben armar una landing page con
+router.post("/characters", characterController.addCharacter);
 
-- [ ] Alguna imagen de fondo representativa al proyecto
-- [ ] Botón para ingresar al home (`Ruta principal`)
+module.exports = router;
+```
 
-__Ruta principal__: debe contener
+CREAMOS LA SEGUNDA RUTA, PARA QUE NOS DEVUELVA EL CHARACTER QUE ACABAMOS DE CREAR
 
-- [ ] Input de búsqueda para encontrar razas de perros por nombre
-- [ ] Área donde se verá el listado de razas de perros. Deberá mostrar su:
-  - Imagen
-  - Nombre
-  - Temperamento
-  - Peso
-- [ ] Botones/Opciones para filtrar por:
-  - Temperamento
-  - Raza existente (es decir las que vienen de la API) o agregada por nosotros (creadas mediante el form)
-- [ ] Botones/Opciones para ordenar tanto ascendentemente como descendentemente las razas de perro por:
-  - Orden alfabético
-  - Peso
-- [ ] Paginado para ir buscando y mostrando las siguientes razas, mostrando 8 razas por página.
+```JS
+router.get("/characters", characterController.getAllCharacters);
+```
 
-__IMPORTANTE__: Dentro de la Ruta Principal se deben mostrar tanto las razas de perros traidas desde la API como así también las de la base de datos, pero NO está permitido almacenar en la base de datos las razas de perros de la API sino que solamente se pueden guardar aquellas creadas desde el form.
+Y SU RESPECTIVO CONTROLADOR
 
-__Ruta de detalle de raza de perro__: debe contener
+```JS
+async function getAllCharacters(req, res, next) {
+  try {
+    const characters = await Character.findAll();
+    return res.status(200).json(characters);
+  } catch (err) {
+    next(err);
+  }
+}
+```
 
-- [ ] Los campos mostrados en la ruta principal para cada raza (imagen, nombre y temperamento)
-- [ ] Altura
-- [ ] Peso
-- [ ] Años de vida
+UNA VEZ QUE TENGAMOS EL CREATE, VAMOS A LLENAR LA BASE DE DATOS CON LOS CHARACTERS
+QUE VIENEN DE LA API EXTERNA PARA ESO, VAMOS A CREAR UN UNA FUNCION QUE EN ESTE 
+CASO SE VA A LLAMAR DBFILLER
 
-__Ruta de creación de raza de perro__: debe contener
+```JS
+require("dotenv").config();
+const { API_URL } = process.env;
+const axios = require("axios");
+const { Character } = require("../db.js");
 
-- [ ] Un formulario __controlado con JavaScript__ con los siguientes campos:
-  - Nombre
-  - Altura (Diferenciar entre altura mínima y máxima)
-  - Peso (Diferenciar entre peso mínimo y máximo)
-  - Años de vida
-- [ ] Posibilidad de seleccionar/agregar uno o más temperamentos
-- [ ] Botón/Opción para crear una nueva raza de perro
+async function dbFiller(req, res, next) {
+  try {
+    const { data } = await axios.get(API_URL);
+    data.map(async (character) => {
+      const { firstName, lastName, title, family, imageUrl } = character;
+      await Character.create({
+        firstName,
+        lastName,
+        title,
+        family,
+        imageUrl,
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
-> Es requisito que el formulario de creación esté validado con JavaScript y no sólo con validaciones HTML. Pueden agregar las validaciones que consideren. Por ejemplo: Que el nombre de la raza no pueda contener números o símbolos, que el peso/altura mínimo no pueda ser mayor al máximo y viceversa, etc.
+module.exports = {
+  dbFiller,
+};
+```
 
-## Base de datos
+UNA VEZ CREADA, LO APLICAMOS EN EL INDEX.JS, TENIENDO EN CUENTA QUE SOLO
+DEBE EJECUTARSE UNA VEZ AL INICIAR EL SERVER
 
-El modelo de la base de datos deberá tener las siguientes entidades (Aquellas propiedades marcadas con asterísco deben ser obligatorias):
+```JS
+const dbFiller = require("./controllers/dbFiller.js");
 
-- [ ] Raza con las siguientes propiedades:
-  - ID *
-  - Nombre *
-  - Altura *
-  - Peso *
-  - Años de vida
-- [ ] Temperamento con las siguientes propiedades:
-  - ID
-  - Nombre
+var isExecuted = false;
 
-La relación entre ambas entidades debe ser de muchos a muchos ya que una raza de perro puede tener varios "temperamentos" en simultaneo y, a su vez, un "temperamento" puede corresponder a múltiples razas de perro distintas. Por ejemplo la raza `pug` es docil, inteligente y sociable (entre otras). Pero a su vez existen otras razas de perro que también son sociables o inteligentes.
+if (!isExecuted) {
+  isExecuted = true;
+  dbFiller.dbFiller();
+}
+```
 
-__IMPORTANTE__: Pensar como modelar los IDs de las razas de perros en la base de datos. Existen distintas formas correctas de hacerlo pero tener en cuenta que cuando hagamos click en alguna, esta puede provenir de la API o de la Base de Datos por lo que cuando muestre su detalle no debería haber ambigüedad en cual se debería mostrar. Por ejemplo si en la API la raza `Pug` tiene id = 1 y en nuestra base de datos creamos una nueva raza `Henry Pug` con id = 1, ver la forma de diferenciarlas cuando querramos acceder al detalle de la misma.
+CON ESTO YA TENDRIAMOS TANTO LA RUTA DE GET, COMO LA DE POST, ASI QUE PASAREMOS
+A CREAR LAS QUE FALTAN, PRIMERO VAMOS A CREAR UNA RUTA PARA LLAMAR UN PERSONAJE 
+UTILIZANDO SU ID
+```JS
+async function getById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const character = await Character.findByPk(id);
+    if (character === null) {
+      return res.status(404).json({ message: "Character not found" });
+    }
+    return res.status(200).json(character);
+  } catch (err) {
+    next(err);
+  }
+}
+```
+CREAMOS LA RUTA CORRESPONDIENTE PARA CHEQUEAR QUE ESTE FUNCIONANDO
 
-## Backend
+```JS
+router.get("/characters/:id", characterController.getById);
+```
 
-Se debe desarrollar un servidor en Node/Express con las siguientes rutas:
+AHORA CREAMOS EL CONTROLADOR Y LA RUTA PARA BUSCAR UN PERSONAJE POR NOMBRE
 
-__IMPORTANTE__: No está permitido utilizar los filtrados, ordenamientos y paginados brindados por la API externa, todas estas funcionalidades tienen que implementarlas ustedes.
+```JS
+async function getByName(req, res, next) {
+  try {
+    const { firstName } = req.query;
+    const character = await Character.findOne({
+      where: {
+        firstName: `${firstName}`,
+      },
+    });
 
-- [ X ] __GET /dogs__:
-  - Obtener un listado de las razas de perro
-  - Debe devolver solo los datos necesarios para la ruta principal
-- [ X ] __POST /dogs__:
-  - Recibe los datos recolectados desde el formulario controlado de la ruta de creación de raza de perro por body
-  - Crea una raza de perro en la base de datos relacionada con sus temperamentos
-- [ X ] __GET /dogs/{idRaza}__:
-  - Obtener el detalle de una raza de perro en particular
-  - Debe traer solo los datos pedidos en la ruta de detalle de raza de perro
-  - Incluir los temperamentos asociados
-- [ X ] __GET /dogs?name="..."__:
-  - Obtener un listado de las razas de perro que contengan la palabra ingresada como query parameter
-  - Si no existe ninguna raza de perro mostrar un mensaje adecuado
-- [ X ] __GET /temperaments__:
-  - Obtener todos los temperamentos posibles
-  - En una primera instancia deberán obtenerlos desde la API externa y guardarlos en su propia base de datos y luego ya utilizarlos desde allí
+    if (character === null) {
+      return res.status(404).json({ message: "Character not found" });
+    }
 
-## Testing
+    res.send(character);
+  } catch (err) {
+    next(err);
+  }
+}
+```
 
-- [ ] Al menos tener un componente del frontend con sus tests respectivos
-- [ ] Al menos tener una ruta del backend con sus tests respectivos
-- [ ] Al menos tener un modelo de la base de datos con sus tests respectivos
+```JS
+router.get("/byName/", characterController.getByName);
+
+```
+
+AHORA PARA LA ULTIMA RUTA, NECESITAMOS AGREGAR A NUESTRO DBFILLER UNA FUNCION
+QUE TOME LOS NOMBRES DE LAS FAMILIAS, FILTRE LOS DUPLICADOS Y LOS GUARDE EN LA BASE DE 
+DATOS, PARA ASI LUEGO PODER CREAR UNA RUTA QUE NOS DEVUELVA SOLO LAS FAMILIAS
+
+```JS
+const { Character, Family } = require("../db.js");
+
+//AGREGAMOS ESTO DENTRO DEL TRY EXISTENTE
+    const families = data.map((character) => character.family);
+    const uniqueFamilies = [...new Set(families)];
+    uniqueFamilies.map(async (family) => {
+      await Family.create({
+        name: family,
+      });
+    });
+```
+
+AHORA CREAMOS EN EL CONTROLLER 
+
+```JS
+const { Family } = require("../db");
+
+async function getAllFamilies(req, res, next) {
+  try {
+    const families = await Family.findAll();
+    return res.status(200).json(families);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  getAllFamilies,
+};
+
+```
+
+AGREGAMOS LA RUTA CORRESPONDIENTE
+
+```JS
+router.get("/families", familyController.getAllFamilies);
+```
+
+CON ESTO YA TENDRIAMOS EL BACK COMPLETO, DETALLES MAS, DETALLES MENOS
+SIEMPRE SE PUEDE MEJORAR, O MODIFICAR PARA LOGRAR LO QUE NECESITEN O 
+QUIERAN USTEDES
+
+AHORA PASAMOS AL FRONT
+
+VAMOS A EMPEZAR CREANDO LOS COMPONENTES BASE QUE VAMOS A NECESITAR PARA 
+LAS RUTAS, EL LANDING, EL HOME, EL CREATE Y EL DETAIL Y LA CARD, UNA VEZ 
+QUE LOS TENEMOS COMPLETOS HACEMOS EL RUTEO EN EL ARCHIVO APP.JS
+
+
+```JS
+import "./App.css";
+import React from "react";
+import { BrowserRouter, Switch, Route } from "react-router-dom";
+import Landing from "./Components/Landing/Landing";
+import Home from "./Components/Home/Home";
+import CharacterCreate from "./Components/CharacterCreate/CharacterCreate";
+import Detail from "./Components/Detail/Detail";
+
+function App() {
+  return (
+    <div className="App">
+      <BrowserRouter>
+        <Switch>
+          <Route exact path="/" component={Landing} />
+          <Route exact path="/home" component={Home} />
+          <Route exact path="/characterCreate" component={CharacterCreate} />
+          <Route exact path="/detail/:id" component={Detail} />
+        </Switch>
+      </BrowserRouter>
+    </div>
+  );
+}
+
+export default App;
+```
+
+UNA VEZ QUE TENEMOS EL RUTEO FUNCIONANDO, PASAMOS A ARMAR LA ESTRUCTURA
+DE REDUX, PRIMERO CREAMOS LAS CARPETAS ACTIONS, ACTIONTYPES, REDUCER, STORE
+UNA VEZ CREADOS TODOS LOS ARCHIVOS, VAMOS A CREAR NUESTRO REDUCER PARA PODER
+ARMAR NUESTRA STORE Y EMPEZAR A TRABAJAR CON ESTADOS GLOBALES
+
+REDUCER.JS
+```JS
+const initialState = {
+  characters: [],
+  families: [],
+};
+
+export default function rootReducer(state = initialState, action) {
+  switch (action.type) {
+    default:
+      return state;
+  }
+}
+
+```
+
+UNA VEZ CREADO EL REDUCER VAMOS A CREAR NUESTRA STORE
+
+```JS
+import { createStore, applyMiddleware } from "redux";
+import { composeWithDevTools } from "redux-devtools-extension";
+import thunk from "redux-thunk";
+import reducer from "../reducer/reducer";
+
+export const store = createStore(
+  reducer,
+  composeWithDevTools(applyMiddleware(thunk))
+);
+```
+
+YA QUE TENGAMOS TANTO EL REDUCER COMO EL STORE, PODEMOS PASAR
+A ENVOLVER NUESTRA APP EN EL PROVIDER PARA COMENZAR A UTILIZAR
+REDUX, ESTO LO HACEMOS EN EL ARCHIVO INDEX.JS
+
+```JS
+import { Provider } from "react-redux";
+import { store } from "./Redux/store/store";
+
+ReactDOM.render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </React.StrictMode>,
+  document.getElementById("root")
+);
+```
+
+YA TENEMOS UNA SUERTE DE MAQUETA FUNCIONAL DEL FRONT, ASI QUE NO 
+QUEDA MAS QUE IR PASO A PASO CUMPLIENDO CON LOS REQUISITOS QUE 
+NOS PIDEN.
+
+AHORA VAMOS A HACER UN .ENV, PARA GUARDAR LAS URLS QUE VAMOS A 
+UTILIZAR, ASI NO TENDREMOS QUE UTILIZAR STRINGS LITERALES, PARA 
+SABER QUE URLS VAMOS A UTILIZAR ES FACIL, SON LAS RUTAS O ENDPOINTS
+QUE CREAMOS EN NUESTRO BACK!
+
+```JS
+URL_CREATE_CHARACTER = "http://localhost:3001/characters"
+URL_ALL_CHARACTERS = "http://localhost:3001/characters"
+URL_GET_CHARACTER_BY_ID = "http://localhost:3001/characters/:id"
+URL_GET_CHARACTER_BY_NAME = "http://localhost:3001/byName/"
+URL_ALL_FAMILIES = "http://localhost:3001/families"
+```
+
+YA CON ESTO PODEMOS EMPEZAR A DARLE FULL A NUESTRO FRONT, LO PRIMERO
+QUE VAMOS A HACER VA A SER CREAR LA ACCIÓN QUE NOS VA A HACER LA PETICION
+A NUESTRO BACK PARA TRAERNOS TODOS LOS PERSONAJES DE LA SERIE
+
+```JS
+import axios from "axios";
+
+export function getCharacters() {
+  return async function (dispatch) {
+    let response = await axios.get("http://localhost:3001/characters");
+    return dispatch({
+      type: "GET_CHARACTERS",
+      payload: response.data,
+    });
+  };
+}
+
+```
+
+UNA VEZ CREADA LA ACCIÓN, VAMOS A PROCEDER A CREAR EL CASO QUE VA A 
+MANEJAR LA RESPUESTA EN NUESTRO REDUCER
+
+```JS
+    case "GET_CHARACTERS":
+      return {
+        ...state,
+        characters: action.payload,
+      };
+```
+
+YA TENEMOS LA ACCION CREADA, Y EL REDUCER QUE VA A GUARDAR LA INFO EN
+NUESTRO ESTADO, AHORA, TENEMOS QUE LLAMARLA DESDE NUESTRO HOME, PARA ASI
+PODER EMPEZAR A VER LA INFO EN NUESTRO FRONT!
+
+```JS
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getCharacters } from "../../Redux/actions/actions";
+
+function Home() {
+  const dispatch = useDispatch();
+
+  const allCharacters = useSelector((state) => state.characters);
+
+  useEffect(() => {
+    dispatch(getCharacters());
+  }, []);
+  return (
+    <div>
+      Home
+    </div>
+  );
+}
+
+export default Home;
+```
+
+YA CON ESTA INFO, PODEMOS CREAR TARJETAS, O CARDS, DE CADA UNO DE LOS 
+PERSONAJES, PARA ESO OBVIAMENTE, NECESITAMOS UN COMPONENTE QUE SE ENCARGUE
+DE TAL FUNCION, ASI QUE VAMOS A MODIFICAR NUESTRO COMPONENTE CARD PARA QUE
+CUMPLA TAL FUNCION
+
+```JS
+import React from "react";
+
+function Card({ id, firstName, lastName, fullName, title, imageUrl }) {
+  return (
+    <div>
+      <h1>{fullName}</h1>
+      <h3>
+        {firstName} {lastName}
+      </h3>
+      <h3>{title}</h3>
+      <img src={imageUrl} alt={fullName} />
+    </div>
+  );
+}
+
+export default Card;
+```
+
+YA CON NUESTRA ACCION, Y NUESTRO COMPONENTE CARD CREADO, PASAMOS A LLAMARLO
+DESDE EL HOME, PARA PODER VER GRAFICAMENTE LOS DATOS QUE TRAEMOS DE NUESTRO BACK
+
+```JS
+import Card from "../Card/Card";
+
+  return (
+    <div>
+      Home
+      {allCharacters.map((char) => (
+        <Card
+          id={char.id}
+          firstName={char.firstName}
+          lastName={char.lastName}
+          fullName={char.fullName}
+          title={char.title}
+          imageUrl={char.imageUrl}
+        />
+      ))}
+    </div>
+  );
+```

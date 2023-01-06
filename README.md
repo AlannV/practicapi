@@ -61,8 +61,8 @@ module.exports = (sequelize) => {
 CREAMOS EL .ENV CON LOS SIGUIENTES DATOS
 
 ```JS
-DB_USER="postgres"
-DB_PASSWORD="m0gur4226"
+DB_USER="" <- aca va tu usuario de postgres
+DB_PASSWORD="" <-aca va tu contraseña de postgres
 DB_HOST="localhost"
 DB_NAME="game_of_thrones"
 ```
